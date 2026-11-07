@@ -3,6 +3,7 @@
 //
 // Usage: cargo run -p prisma-dualsense-audio --bin audio-smoke
 
+#[cfg(windows)]
 use prisma_dualsense_audio::synth::RumbleStep;
 
 #[cfg(not(windows))]
