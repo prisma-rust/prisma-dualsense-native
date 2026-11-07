@@ -5,6 +5,14 @@
 
 use prisma_dualsense_audio::synth::RumbleStep;
 
+#[cfg(not(windows))]
+fn main() {
+    // The endpoint is WASAPI-only; the crate still builds elsewhere so the
+    // shared pcm/synth code stays testable on every platform.
+    eprintln!("audio-smoke: the DualSense audio endpoint is Windows-only (WASAPI)");
+}
+
+#[cfg(windows)]
 fn main() {
     let session = match prisma_dualsense_audio::session::Session::open() {
         Ok(session) => session,
