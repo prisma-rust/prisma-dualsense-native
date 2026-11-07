@@ -12,6 +12,12 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hound = "3.5"
+
+# WASAPI only exists on Windows, and the `windows` crate stops compiling on
+# other targets (its `windows-future` crate references Windows-only IMarshal),
+# so the dependency is per-target. Off Windows the crate still builds and tests
+# `pcm`/`synth`, it just exports nothing.
+[target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_Devices_FunctionDiscovery",
