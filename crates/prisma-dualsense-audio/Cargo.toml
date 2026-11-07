@@ -1,0 +1,25 @@
+[package]
+name = "prisma-dualsense-audio"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "DualSense USB audio endpoint: persistent four-channel WASAPI stream"
+
+[lib]
+name = "prisma_dualsense_audio"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hound = "3.5"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_UI_Shell_PropertiesSystem",
+] }

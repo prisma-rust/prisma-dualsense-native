@@ -1,0 +1,13 @@
+[package]
+name = "prisma-dualsense-hid"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "DualSense HID transport: output reports, input decoding, writer thread"
+
+[lib]
+name = "prisma_dualsense_hid"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]

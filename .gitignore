@@ -1,0 +1,6 @@
+/target/
+# Cargo bin targets are part of this repository (the old Unity tree ignored
+# every `bin/`, which is why the smoke binaries never reached version control).
+!**/src/bin/
+*.dll
+*.pdb
