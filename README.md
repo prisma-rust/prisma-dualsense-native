@@ -1,11 +1,26 @@
 # prisma-dualsense-native
 
-Windows native plugins behind Prisma's DualSense support: HID I/O and the
-controller's USB audio endpoint (HD haptics / speaker).
+Native plugins behind Prisma's DualSense support: HID I/O and the controller's
+USB audio endpoint (HD haptics / speaker).
 
 This repository was split out of `F:\repos\PrismaFramework` (previously
 `Client/Plugins/NativePlugins/Windows`). The Unity client keeps only the built
-DLLs under `Client/Assets/Plugins/NativePlugins/Windows`; the sources live here.
+binaries under `Client/Assets/Plugins/NativePlugins/<platform>`; the sources
+live here.
+
+## Platforms
+
+| Target | HID | Audio | Notes |
+| --- | --- | --- | --- |
+| Windows x64 | `hidapi` → `hid.dll` | WASAPI | the reference implementation |
+| Linux x64 | `hidapi` → `hidraw` | — | needs `libudev-dev` at build time (same as gilrs); Bluetooth allowed by default |
+| macOS | `hidapi` → IOKit | — | opened shared, so Unity's Input System and Steam keep reading the pad |
+| Android / iOS | — | — | hidapi has no Android/iOS backend; the crate builds without exports and Unity falls back to `NullControllerOutputService` |
+
+HID is cross-platform because the platform boundary is only *how bytes reach
+the device*: `hidapi` (the same choice horizon makes). Everything above it —
+the report codec, the writer thread, the diffing, the reconnect, the input
+decoding — is platform-independent and unit tested.
 
 ## Crates
 
@@ -47,8 +62,22 @@ cargo build --workspace --release
 cargo test --workspace
 ```
 
-Outputs land in `target/release/`. Copy the DLLs (and PDBs for debugging) to
-`PrismaFramework/Client/Assets/Plugins/NativePlugins/Windows`.
+Linux needs `libudev` headers (`sudo apt-get install libudev-dev`,
+`sudo dnf install systemd-devel`, `sudo pacman -S udev`); macOS and Windows need
+nothing beyond a Rust toolchain and a C compiler (the hidapi C sources are built
+by `cc`).
+
+Outputs land in `target/release/`:
+
+| Platform | Files |
+| --- | --- |
+| Windows | `prisma_dualsense_hid.dll` (+ `.pdb`), `prisma_dualsense_audio.dll` |
+| Linux | `libprisma_dualsense_hid.so` |
+| macOS | `libprisma_dualsense_hid.dylib` |
+
+Copy them to the matching Unity folder:
+`PrismaFramework/Client/Assets/Plugins/NativePlugins/{Windows,Linux,macOS}`.
+`.github/workflows/ci.yml` builds and uploads all three.
 
 ## Smoke tests / examples
 

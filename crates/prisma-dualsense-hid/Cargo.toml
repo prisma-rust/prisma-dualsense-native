@@ -3,11 +3,21 @@ name = "prisma-dualsense-hid"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "DualSense HID transport: output reports, input decoding, writer thread"
+description = "DualSense HID: semantic output state, protocol codec, input decoding"
 
 [lib]
 name = "prisma_dualsense_hid"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
-[dependencies]
+# hidapi has no Android backend and its build script stops there, so the
+# dependency (and the whole device stack) is limited to the desktop targets.
+# See the `cfg` in `lib.rs`; everything else builds the crate without exports.
+[target.'cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))'.dependencies]
+# BSD-3 licensed C library, statically linked. `linux-static-hidraw` avoids a
+# libudev build dependency; `macos-shared-device` leaves the device open for
+# Unity's Input System and Steam instead of seizing it.
+hidapi = { version = "2.6", default-features = false, features = [
+    "linux-static-hidraw",
+    "macos-shared-device",
+] }

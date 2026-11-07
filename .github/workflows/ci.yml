@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # hidapi's hidraw backend links libudev (same as gilrs/horizon).
+      - name: Install libudev (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build
+        run: cargo build --workspace --release
+
+      - name: Upload plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-dualsense-hid-${{ runner.os }}
+          path: |
+            target/release/prisma_dualsense_hid.dll
+            target/release/prisma_dualsense_hid.pdb
+            target/release/libprisma_dualsense_hid.so
+            target/release/libprisma_dualsense_hid.dylib
+            target/release/prisma_dualsense_audio.dll
+            target/release/prisma_dualsense_audio.pdb
+          if-no-files-found: ignore

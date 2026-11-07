@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use crate::input::{self, InputState};
 use crate::report::{Output, Trigger, DEFAULT_LIGHTBAR, PLAYER_1};
-use crate::win32::{self, Mailbox, Pad};
+use crate::transport::{self, Mailbox, Pad};
 
 /// The pad's steady state: what it shows while no timed vibration is playing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -256,7 +256,7 @@ impl Control {
 
     /// 1: a new report was decoded, 0: no new report, -1: unknown/short report.
     pub fn poll_input(&self, raw: &mut [u8], raw_len: &mut u32, out: &mut InputState) -> i32 {
-        let seq = win32::read_mailbox(&self.inner.mailbox, raw, raw_len);
+        let seq = transport::read_mailbox(&self.inner.mailbox, raw, raw_len);
         if *raw_len == 0 {
             return 0;
         }
@@ -345,14 +345,16 @@ impl Writer {
             }
             self.apply_pending();
             if self.inner.rescan.swap(false, Ordering::AcqRel) {
-                if self.pad.as_ref().is_some_and(|pad| pad.lost()) {
-                    self.lost("rescan requested");
-                }
                 self.scans_left = SCAN_TRIES;
                 self.next_scan = Instant::now();
             }
             if self.pad.as_ref().is_some_and(|pad| pad.lost()) {
-                self.lost("unplugged");
+                let why = self
+                    .pad
+                    .as_ref()
+                    .and_then(|pad| pad.error())
+                    .unwrap_or_else(|| "unplugged".to_string());
+                self.lost(&why);
             }
             let now = Instant::now();
             if self.pad.is_none() && self.scans_left > 0 && now >= self.next_scan {
@@ -436,7 +438,7 @@ impl Writer {
     fn scan(&mut self) {
         self.scans_left -= 1;
         self.next_scan = Instant::now() + Duration::from_secs(1);
-        match win32::open(
+        match transport::open(
             Arc::clone(&self.inner.mailbox),
             Arc::clone(&self.inner.reads),
         ) {
@@ -459,8 +461,8 @@ impl Writer {
                 }
                 self.inner.delivered.store(0, Ordering::Release);
                 self.lights = match pad.transport {
-                    win32::Transport::Usb => Lights::Ready,
-                    win32::Transport::Bluetooth => {
+                    transport::Transport::Usb => Lights::Ready,
+                    transport::Transport::Bluetooth => {
                         Lights::Waiting(Instant::now() + Duration::from_secs(1))
                     }
                 };

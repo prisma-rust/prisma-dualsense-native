@@ -6,6 +6,11 @@ Windows-only native plugins behind Prisma's DualSense support. The Unity client
 
 ## Boundaries
 
+- **The platform boundary is the transport.** `transport.rs` is hidapi
+  (`hid.dll` / `hidraw` / IOKit); everything above it is platform-independent.
+  Do not add platform `#[cfg]`s to `device.rs`, `ffi.rs` or `report.rs`: the
+  only desktop gate is the `cfg(any(windows, linux, macos))` in `lib.rs` and
+  the matching dependency block in `Cargo.toml`.
 - **The C ABI is the product.** The Unity side (`DualSenseNativeHid.cs`,
   `PrismaNativeAudio.cs`) binds POD structs and semantic calls, never report
   bytes. Changing a struct, a field order or an export requires the same change
@@ -53,4 +58,8 @@ cargo run -p prisma-dualsense-hid --example hid-dump -- 5
 
 After a change, rebuild `--release` and copy
 `prisma_dualsense_hid.dll` / `prisma_dualsense_hid.pdb` /
-`prisma_dualsense_audio.dll` into the Unity project.
+`prisma_dualsense_audio.dll` into the Unity project; on Linux/macOS copy
+`libprisma_dualsense_hid.so` / `.dylib` into
+`Client/Assets/Plugins/NativePlugins/{Linux,macOS}`. CI
+(`.github/workflows/ci.yml`) builds all three desktop targets — use its
+artifacts rather than trusting a single-platform local build.
